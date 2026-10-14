@@ -4,6 +4,11 @@ Thumbs.db
 *.log
 .env
 *.env.*
+!.env.example
 .vscode/
 .idea/
 .docker/
+
+# Avaliação PD: os cookies de sessão são credenciais e as respostas em bruto têm dados das contas de teste
+avaliacao/config.local
+avaliacao/resultados/*/raw/

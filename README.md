@@ -4,6 +4,19 @@
 
 Academic project for the Software Architecture and Design course.
 
+## 🔒 Privacidade de Dados (fork)
+
+Este fork dá continuidade ao GitDash na UC de Privacidade de Dados (Mestrado em Engenharia Informática, Iscte).
+As alterações seguem a matriz de riscos do relatório (capítulo 5) e são avaliadas com o kit em [`avaliacao/`](avaliacao/README.md).
+O estado anterior às alterações está marcado com a tag `baseline`.
+
+Antes de correr, cria o `.env` com os dados da OAuth App (callback `http://localhost:5053/signin-github`):
+
+```bash
+cp .env.example .env   # preenche GITHUB_CLIENT_ID e GITHUB_CLIENT_SECRET
+docker compose up --build
+```
+
 # 🌐 Full Stack Monorepo Project
 
 This is a full-stack monorepo project consisting of:
@@ -140,11 +153,13 @@ By default, it runs at: http://localhost:5173
 
 ### Backend (.NET Core)
 ```bash
-cd packages/backend
-dotnet restore
+docker compose up -d postgres redis
+cd packages/backend/GitDashBackend
+dotnet user-secrets set "GitHub:ClientId" "<client-id>"
+dotnet user-secrets set "GitHub:ClientSecret" "<client-secret>"
 dotnet run
 ```
-By default, it runs at: http://localhost:5000 or https://localhost:5001
+By default, it runs at: http://localhost:5053
 
 ---
 
