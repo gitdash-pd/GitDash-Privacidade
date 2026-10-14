@@ -1,0 +1,10 @@
+id;registo;idade;esperado;existe;resultado
+H1;pd-teste/historico-030d;30 dias;manter;sim;OK
+H2;pd-teste/historico-089d23h;89 dias e 23 h;manter;sim;OK
+H3;pd-teste/historico-090d01h;90 dias e 1 h;eliminar;sim;NÃO CONFORME (conservado além do prazo)
+H4;pd-teste/historico-120d;120 dias;eliminar;sim;NÃO CONFORME (conservado além do prazo)
+H5;acavieira/apvc-exercises;120 dias mas revisitado;manter;sim;OK
+L1;/pd-teste/log-100d;100 dias;manter;sim;OK
+L2;/pd-teste/log-179d23h;179 dias e 23 h;manter;sim;OK
+L3;/pd-teste/log-180d01h;180 dias e 1 h;eliminar;sim;NÃO CONFORME (conservado além do prazo)
+L4;/pd-teste/log-200d;200 dias;eliminar;sim;NÃO CONFORME (conservado além do prazo)

@@ -1,0 +1,4 @@
+fase=antes
+data_utc=2026-10-14T15:00:38Z
+commit=4e863e1
+branch=main
