@@ -154,5 +154,34 @@ namespace GitDashBackend.Tests.Services
             Assert.True(recent[0].LastVisited >= recent[1].LastVisited);
             Assert.True(recent[1].LastVisited >= recent[2].LastVisited);
         }
+
+        [Fact]
+        public async Task GetRecentAccessLogsAsync_RespectsLimitAndOrder()
+        {
+            using var context = CreateInMemoryContext();
+            var service = new DbService(context);
+
+            var user = new User { Username = "ana", Created = DateTime.UtcNow };
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+
+            var now = DateTime.UtcNow;
+            for (int i = 0; i < 4; i++)
+            {
+                context.Logs.Add(new Log
+                {
+                    UserId = user.Id,
+                    VisitedEndpoint = $"/api/endpoint{i}",
+                    Created = now.AddMinutes(-i)
+                });
+            }
+            await context.SaveChangesAsync();
+
+            var logs = await service.GetRecentAccessLogsAsync(2);
+
+            Assert.Equal(2, logs.Count);
+            Assert.Equal("/api/endpoint0", logs[0].Endpoint);
+            Assert.Equal("ana", logs[0].Username);
+        }
     }
 }

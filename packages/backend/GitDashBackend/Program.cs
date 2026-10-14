@@ -35,15 +35,29 @@ builder.Services.AddControllers();
 builder.Services
     .AddAuthentication(options =>
     {
-        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        // The session cookie is the default for everything. GitHub is only challenged explicitly in /login,
+        // so an API request without a valid session gets 401 instead of a redirect to GitHub.
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = "GitHub";
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddCookie(options =>
     {
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+        // API answers with status codes instead of redirecting to login/access-denied pages.
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
     })
     .AddOAuth("GitHub", options =>
     {
@@ -89,8 +103,9 @@ builder.Services
             }
         };
     });
-    
 
+// Authorization: general listings require the Admin policy (Admin:Logins)
+builder.Services.AddGitDashAuthorization(builder.Configuration);
 
 
 // Configure Redis Cache

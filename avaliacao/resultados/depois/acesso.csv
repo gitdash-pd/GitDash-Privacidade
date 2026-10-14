@@ -1,0 +1,20 @@
+id;descricao;sessao;pedido;esperado;status;bytes;contem_A;contem_B;resultado
+T1.1;Lista de utilizadores sem sessão;-;/api/Db/user;negado;404;0;não;não;PROTEGIDO
+T1.2;Todos os registos de acesso sem sessão;-;/api/Db/log;negado;404;0;não;não;PROTEGIDO
+T1.3;Histórico de B sem sessão;-;/api/Db/user/dummyanalaika/repositories;negado;404;0;não;não;PROTEGIDO
+T1.4;Registos de acesso de B sem sessão;-;/api/Db/user/dummyanalaika/logs;negado;404;0;não;não;PROTEGIDO
+T1.5;Todo o histórico sem sessão;-;/api/Db/repository;negado;404;0;não;não;PROTEGIDO
+T1.6;Repositórios recentes sem sessão;-;/api/github/recentRepositories;negado;401;0;não;não;PROTEGIDO
+T1.7;Histórico próprio sem sessão (endpoint novo);-;/api/me/history;negado;401;0;não;não;PROTEGIDO
+T1.8;Registos gerais de administração sem sessão (endpoint novo);-;/api/admin/logs;negado;401;0;não;não;PROTEGIDO
+T2.1;Histórico de A com sessão A;A;/api/me/history;proprio;200;690;sim;não;OK
+T2.2;Registos de acesso de A com sessão A;A;/api/me/logs;proprio;200;4251;sim;não;OK
+T2.3;Repositórios recentes de A com sessão A;A;/api/github/recentRepositories;proprio;200;790;sim;não;OK
+T3.1;Histórico de B pedido pela sessão A;A;/api/Db/user/dummyanalaika/repositories;negado;404;0;não;não;PROTEGIDO
+T3.2;Registos de B pedidos pela sessão A;A;/api/Db/user/dummyanalaika/logs;negado;404;0;não;não;PROTEGIDO
+T3.3;Todos os registos de acesso pela sessão A;A;/api/Db/log;negado;404;0;não;não;PROTEGIDO
+T3.4;Todo o histórico pela sessão A;A;/api/Db/repository;negado;404;0;não;não;PROTEGIDO
+T3.5;Histórico com username=B injetado pela sessão A;A;/api/me/history?username=dummyanalaika;proprio;200;690;sim;não;OK
+T3.6;Recentes com username=B injetado pela sessão A;A;/api/github/recentRepositories?username=dummyanalaika;proprio;200;790;sim;não;OK
+T3.7;Registos gerais pela sessão A sem permissão de administração;A;/api/admin/logs;negado;403;0;não;não;PROTEGIDO
+T4.1;Listagem de repositórios por A altera histórico de B;A;/api/github/repositories;inalterado;200;-;-;-;PROTEGIDO
