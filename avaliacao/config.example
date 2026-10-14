@@ -1,0 +1,20 @@
+# Copia para avaliacao/config.local (ignorado pelo git) e preenche.
+# Os cookies são credenciais de sessão: nunca os coloques no repositório.
+
+BASE_URL=http://localhost:5053
+
+# Logins GitHub das duas contas de teste (um não pode estar contido no outro, ex.: "ana" e "ana2").
+USER_A=login-da-conta-a
+USER_B=login-da-conta-b
+
+# Valor completo do cabeçalho "Cookie" enviado para localhost:5053 por cada sessão.
+# Chrome: DevTools > Network > pedido para localhost:5053/api/... > Request Headers > Cookie > Copy value.
+# Conta A numa janela normal e conta B numa janela anónima (ou noutro browser).
+COOKIE_A='.AspNetCore.Cookies=...'
+COOKIE_B='.AspNetCore.Cookies=...'
+
+# Repositório que a conta A já abriu no GitDash (dono = A). Formato owner/repo.
+REPO_A=login-da-conta-a/nome-do-repo
+
+# Repositório PRIVADO da conta A onde B é colaborador (só para o teste de revogação da cache).
+REPO_PARTILHADO=login-da-conta-a/repo-privado-partilhado
