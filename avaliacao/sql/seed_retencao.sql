@@ -2,7 +2,6 @@
 -- Variáveis psql: login (conta A) e repo (repositório já visitado por A).
 -- Os nomes começam por pd-teste/ para serem fáceis de identificar e remover.
 -- As colunas guardam UTC sem fuso horário, tal como o backend (DateTime.UtcNow).
-set ON_ERROR_STOP on
 
 delete from repository where name like 'pd-teste/%';
 delete from log where visited_endpoint like '/pd-teste/%';
