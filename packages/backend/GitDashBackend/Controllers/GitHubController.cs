@@ -74,20 +74,9 @@ public class GitHubController : ControllerBase
             }
 
             // Fetch repositories
+            // Listing is not a visit: the history is only updated in the overview (stats) endpoint,
+            // and only for the session user. The previous lookup by name changed other users' history.
             RepositoriesDto repositories = await _gitHubService.GetUserRepositoriesAsync(accessToken);
-
-            // Update repository visits
-            foreach (var repoDto in repositories.repositories)
-            {
-                var repo = await _dbContext.Repositories.SingleOrDefaultAsync(r => r.Name == repoDto.FullName);
-                if (repo != null)
-                {
-                    repo.VisitsNumber += 1;
-                    repo.LastVisited = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
-                    _dbContext.Repositories.Update(repo);
-                }
-            }
-            await _dbContext.SaveChangesAsync();
 
             return Ok(repositories);
         }
@@ -194,10 +183,10 @@ public async Task<IActionResult> GetRecentRepositories()
 
 
     /// <summary>
-    /// Get commits for a specific repository using fullName as a query parameter
+    /// Get commits for a specific repository using fullName as a query parameter.
+    /// Uses the GitHub token of the authenticated session, like every other endpoint.
     /// </summary>
     /// <param name="fullName">Repository full name in format: owner/repo (e.g., 'acavieira/ADS-Grupo_PosLaboral-A')</param>
-    /// <param name="authorization">GitHub Personal Access Token</param>
     /// <returns>List of commits with caching</returns>
     /// <example>GET /api/github/commits?fullName=acavieira/ADS-Grupo_PosLaboral-A</example>
     [Authorize]
@@ -207,13 +196,12 @@ public async Task<IActionResult> GetRecentRepositories()
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetRepositoryCommits(
-        [FromQuery] string fullName,
-        [FromHeader(Name = "Authorization")] string? authorization)
+    public async Task<IActionResult> GetRepositoryCommits([FromQuery] string fullName)
     {
-        if (string.IsNullOrEmpty(authorization))
+        var accessToken = await HttpContext.GetTokenAsync("access_token");
+        if (string.IsNullOrEmpty(accessToken))
         {
-            return BadRequest(new { error = "Authorization header with GitHub token is required" });
+            return Unauthorized(new { error = "GitHub access token not found. Please login via GitHub first." });
         }
 
         if (string.IsNullOrEmpty(fullName) || !fullName.Contains('/'))
@@ -240,7 +228,7 @@ public async Task<IActionResult> GetRecentRepositories()
                     await _dbContext.SaveChangesAsync();
                 }
             }
-            CommitsDto commits = await _gitHubService.GetRepositoryCommitsByFullNameAsync(authorization, fullName);
+            CommitsDto commits = await _gitHubService.GetRepositoryCommitsByFullNameAsync(accessToken, fullName);
             return Ok(new 
             { 
                 repository = fullName,
@@ -380,10 +368,9 @@ public async Task<IActionResult> GetRecentRepositories()
 
             if (!string.IsNullOrEmpty(username))
             {
-                //var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == username);
-                var user = _dbService.GetUserbyUsername(username);
-                if (user.Result != null)
-                    userId = user.Result.Id;
+                var user = await _dbService.GetUserbyUsername(username);
+                if (user != null)
+                    userId = user.Id;
             }
 
             // 2. Perform Database Operations (Log + Repository Upsert)

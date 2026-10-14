@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using GitDashBackend.Controllers;
 using GitDashBackend.Data;
+using GitDashBackend.Domain.DTOs;
+using GitDashBackend.Models;
 using GitDashBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -78,17 +80,90 @@ namespace GitDashBackend.Tests.Controllers
             return controller;
         }
 
+        // Authenticated session with a login claim and a GitHub token, as the cookie middleware would provide
+        private static DefaultHttpContext CreateAuthenticatedContext(string login, string token)
+        {
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Name, login)
+            }, "Test"));
+
+            var props = new AuthenticationProperties();
+            props.StoreTokens(new[] { new AuthenticationToken { Name = "access_token", Value = token } });
+
+            var authServiceMock = new Mock<IAuthenticationService>();
+            authServiceMock
+                .Setup(a => a.AuthenticateAsync(It.IsAny<HttpContext>(), It.IsAny<string?>()))
+                .ReturnsAsync(AuthenticateResult.Success(new AuthenticationTicket(principal, props, "Test")));
+
+            var services = new ServiceCollection();
+            services.AddSingleton(authServiceMock.Object);
+
+            return new DefaultHttpContext
+            {
+                User = principal,
+                RequestServices = services.BuildServiceProvider()
+            };
+        }
+
         [Fact]
-        public async Task GetRepositoryCommits_ReturnsBadRequest_WhenAuthorizationHeaderMissing()
+        public async Task GetRepositoryCommits_ReturnsUnauthorized_WhenSessionHasNoToken()
         {
             using var context = CreateInMemoryContext();
             var controller = CreateController(context);
 
-            // Authorization header is null
-            var result = await controller.GetRepositoryCommits("owner/repo", null);
+            var httpContext = new DefaultHttpContext();
+            var services = new ServiceCollection();
+            services.AddSingleton<IAuthenticationService, FakeAuthenticationService>();
+            httpContext.RequestServices = services.BuildServiceProvider();
+            controller.ControllerContext.HttpContext = httpContext;
 
-            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal(StatusCodes.Status400BadRequest, badRequest.StatusCode);
+            // The token now comes from the session, never from a request header
+            var result = await controller.GetRepositoryCommits("owner/repo");
+
+            var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal(StatusCodes.Status401Unauthorized, unauthorized.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetRepositories_DoesNotChangeHistoryOfOtherUsers()
+        {
+            using var context = CreateInMemoryContext();
+            var ana = new User { Username = "ana", Created = DateTime.UtcNow };
+            var bruno = new User { Username = "bruno", Created = DateTime.UtcNow };
+            context.Users.AddRange(ana, bruno);
+            await context.SaveChangesAsync();
+
+            // Bruno visited a repository that Ana can also list
+            var lastVisited = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Unspecified);
+            context.Repositories.Add(new Repository
+            {
+                UserId = bruno.Id,
+                Name = "ana/shared",
+                LastVisited = lastVisited,
+                VisitsNumber = 1,
+                Created = lastVisited
+            });
+            await context.SaveChangesAsync();
+
+            var gitHubServiceMock = new Mock<IGitHubService>();
+            gitHubServiceMock
+                .Setup(s => s.GetUserRepositoriesAsync("token-ana"))
+                .ReturnsAsync(new RepositoriesDto
+                {
+                    count = 1,
+                    repositories = { new RepositoryDto { FullName = "ana/shared" } }
+                });
+
+            var controller = CreateController(context, gitHubServiceMock);
+            controller.ControllerContext.HttpContext = CreateAuthenticatedContext("ana", "token-ana");
+
+            var result = await controller.GetRepositories();
+
+            Assert.IsType<OkObjectResult>(result);
+            var brunoEntry = context.Repositories.AsNoTracking().Single(r => r.UserId == bruno.Id);
+            Assert.Equal(lastVisited, brunoEntry.LastVisited);
+            Assert.Equal(1, brunoEntry.VisitsNumber);
         }
 
         [Fact]

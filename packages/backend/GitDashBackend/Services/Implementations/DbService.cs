@@ -1,4 +1,5 @@
-﻿using GitDashBackend.Models;
+﻿using GitDashBackend.Domain.DTOs;
+using GitDashBackend.Models;
 using GitDashBackend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,6 +72,36 @@ public class DbService : IDbService
             .Where(r => r.User.Username == username)
             .OrderByDescending(r => r.LastVisited)
             .Take(3)
+            .ToListAsync();
+    }
+
+    public async Task<List<HistoryEntryDto>> GetHistoryAsync(int userId)
+    {
+        return await _dbContext.Repositories
+            .AsNoTracking()
+            .Where(r => r.UserId == userId)
+            .OrderByDescending(r => r.LastVisited)
+            .Select(r => new HistoryEntryDto(r.Name, r.LastVisited, r.VisitsNumber))
+            .ToListAsync();
+    }
+
+    public async Task<List<AccessLogDto>> GetAccessLogsAsync(int userId)
+    {
+        return await _dbContext.Logs
+            .AsNoTracking()
+            .Where(l => l.UserId == userId)
+            .OrderByDescending(l => l.Created)
+            .Select(l => new AccessLogDto(l.VisitedEndpoint, l.Created))
+            .ToListAsync();
+    }
+
+    public async Task<List<AdminAccessLogDto>> GetRecentAccessLogsAsync(int limit)
+    {
+        return await _dbContext.Logs
+            .AsNoTracking()
+            .OrderByDescending(l => l.Created)
+            .Take(limit)
+            .Select(l => new AdminAccessLogDto(l.User.Username, l.VisitedEndpoint, l.Created))
             .ToListAsync();
     }
 }
