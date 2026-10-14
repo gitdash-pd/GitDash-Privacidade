@@ -1,8 +1,8 @@
 
 
-# ADS-Grupo_PosLaboral-A
+# PD
 
-Academic project for the Software Architecture and Design course.
+Academic project for the Data Privacy.
 
 ## 🔒 Privacidade de Dados (fork)
 
