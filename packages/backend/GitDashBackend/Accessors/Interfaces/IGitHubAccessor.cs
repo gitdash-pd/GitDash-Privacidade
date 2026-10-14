@@ -13,4 +13,7 @@ public interface IGitHubAccessor
     Task<RepositoryDto?> GetRepositoryByOwnerRepoAsync(string token, string ownerRepo);
     Task<CollaboratorCodeChangesDto?> GetCollaboratorCodeChangesAsync(string token, string fullName, string username, string range);
 
+    /// <summary>True while the token can still read the repository (single GitHub request).</summary>
+    Task<bool> HasRepositoryAccessAsync(string token, string fullName);
+
 }

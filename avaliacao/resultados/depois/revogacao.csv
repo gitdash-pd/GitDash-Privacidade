@@ -1,0 +1,3 @@
+id;descricao;status;resultado
+V1;B consulta o repositório partilhado com acesso;200;OK
+V2;B consulta o mesmo repositório depois de perder o acesso;404;PROTEGIDO
