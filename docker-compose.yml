@@ -36,6 +36,8 @@ services:
       # Credenciais da OAuth App lidas do ficheiro .env (fora do git). Ver .env.example.
       - GitHub__ClientId=${GITHUB_CLIENT_ID:?Define GITHUB_CLIENT_ID no ficheiro .env}
       - GitHub__ClientSecret=${GITHUB_CLIENT_SECRET:?Define GITHUB_CLIENT_SECRET no ficheiro .env}
+      # Login GitHub com acesso às listagens gerais (/api/admin). Vazio = ninguém.
+      - Admin__Logins__0=${ADMIN_LOGIN:-}
     ports:
       - "5053:8080"
     depends_on:
