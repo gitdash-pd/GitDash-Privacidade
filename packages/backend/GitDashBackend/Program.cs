@@ -115,9 +115,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = builder.Configuration["Redis:InstanceName"];
 });
 
-// Cache durations (Cache:TtlMinutes, Cache:AccessCheckMinutes)
-builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection("Cache"));
-
 // Configure GitHub Settings
 builder.Services.Configure<GitHubSettings>(
     builder.Configuration.GetSection("GitHub"));
