@@ -444,24 +444,6 @@ public class GitHubAccessor : IGitHubAccessor
         };
     }
     
-    public async Task<bool> HasRepositoryAccessAsync(string token, string fullName)
-    {
-        var (owner, repo) = ParseFullName(Uri.UnescapeDataString(fullName));
-        try
-        {
-            await CreateClient(token).Repository.Get(owner, repo);
-            return true;
-        }
-        catch (NotFoundException)
-        {
-            return false;
-        }
-        catch (AuthorizationException)
-        {
-            return false;
-        }
-    }
-
     private (string owner, string repo) ParseFullName(string fullName)
     {
         if (string.IsNullOrEmpty(fullName) || !fullName.Contains('/'))

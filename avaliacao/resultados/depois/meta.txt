@@ -1,4 +1,5 @@
 fase=depois
-data_utc=2026-10-14T16:35:12Z
-commit=a7e745b
-branch=r4-cache
+data_utc=2026-10-14T15:10:48Z
+commit=3b27ec5
+branch=r1-controlo-acesso
+precondicoes: historico_A=7 historico_B=2 historico_B_repos_de_B=1 logs_B=39

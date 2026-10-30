@@ -38,9 +38,6 @@ services:
       - GitHub__ClientSecret=${GITHUB_CLIENT_SECRET:?Define GITHUB_CLIENT_SECRET no ficheiro .env}
       # Login GitHub com acesso às listagens gerais (/api/admin). Vazio = ninguém.
       - Admin__Logins__0=${ADMIN_LOGIN:-}
-      # Prazos da cache em minutos (valores curtos só para os testes do 5.3.2)
-      - Cache__TtlMinutes=${CACHE_TTL_MINUTES:-30}
-      - Cache__AccessCheckMinutes=${CACHE_ACCESS_CHECK_MINUTES:-5}
     ports:
       - "5053:8080"
     depends_on:
