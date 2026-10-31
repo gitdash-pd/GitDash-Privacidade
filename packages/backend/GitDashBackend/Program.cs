@@ -146,6 +146,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Register custom services 
+builder.Services.AddOptions<RetentionSettings>()
+    .Bind(builder.Configuration.GetSection("Retention"))
+    .Validate(settings => settings.HistoryDays > 0 && settings.LogDays > 0,
+        "Retention:HistoryDays and Retention:LogDays must be positive.")
+    .ValidateOnStart();
+
 builder.Services.AddProjectServices();
 
 // Add CORS for frontend

@@ -18,6 +18,8 @@ public static class DependencyInjection
         // Register Services (Application Layer)
         services.AddScoped<IGitHubService, GitHubService>();
         services.AddScoped<IDbService, DbService>();
+        services.AddScoped<RetentionService>();
+        services.AddHostedService<RetentionWorker>();
 
         return services;
     }

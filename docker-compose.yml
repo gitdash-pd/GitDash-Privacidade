@@ -33,6 +33,9 @@ services:
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=gitdashdb;Username=exampleuser;Password=examplepassword123
       - Redis__Configuration=redis:6379
       - FrontendOrigin=http://localhost:8080
+      - Retention__HistoryDays=${RETENTION_HISTORY_DAYS:-90}
+      - Retention__LogDays=${RETENTION_LOG_DAYS:-180}
+      - Retention__RunOnStartup=${RETENTION_RUN_ON_STARTUP:-true}
       # Credenciais da OAuth App lidas do ficheiro .env (fora do git). Ver .env.example.
       - GitHub__ClientId=${GITHUB_CLIENT_ID:?Define GITHUB_CLIENT_ID no ficheiro .env}
       - GitHub__ClientSecret=${GITHUB_CLIENT_SECRET:?Define GITHUB_CLIENT_SECRET no ficheiro .env}
