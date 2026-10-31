@@ -94,12 +94,6 @@ builder.Services
 
                 using var user = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
                 context.RunClaimActions(user.RootElement);
-
-                if (!string.IsNullOrEmpty(context.AccessToken))
-                {
-                    context.Identity!.AddClaim(
-                        new System.Security.Claims.Claim("github_access_token", context.AccessToken));
-                }
             }
         };
     });
@@ -187,11 +181,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("Frontend");
 
-// Middleware to log access to endpoints
-((IApplicationBuilder)app).UseAccessLog();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Middleware to log access to endpoints
+((IApplicationBuilder)app).UseAccessLog();
 
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

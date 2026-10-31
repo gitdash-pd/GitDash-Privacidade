@@ -1,7 +1,5 @@
-using System.Security.Claims;
-using GitDashBackend.Data;
-using GitDashBackend.Models;
-using Microsoft.EntityFrameworkCore;
+using GitDashBackend.Extensions;
+using GitDashBackend.Services.Interfaces;
 
 namespace GitDashBackend.Middlewares;
 
@@ -14,31 +12,17 @@ public class AccessLogMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, AppDbContext dbContext)
+    public async Task InvokeAsync(HttpContext context, IDbService dbService)
     {
-        // Try to get the authenticated user
-        var identity = context.User.Identity as ClaimsIdentity;
-        var username = identity?.FindFirst(ClaimTypes.Name)?.Value;
-        int? userId = null;
+        var username = context.User.GetGitHubLogin();
+        var route = (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText;
 
-        if (!string.IsNullOrEmpty(username))
+        if (context.User.Identity?.IsAuthenticated == true &&
+            !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(route))
         {
-            var user = await dbContext.Users.SingleOrDefaultAsync(u => u.Username == username);
+            var user = await dbService.GetUserbyUsername(username);
             if (user != null)
-                userId = user.Id;
-        }
-
-        // Register access log
-        if (userId != null)
-        {
-            var log = new Log
-            {
-                UserId = userId.Value,
-                VisitedEndpoint = context.Request.Path,
-                Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-            };
-            dbContext.Logs.Add(log);
-            await dbContext.SaveChangesAsync();
+                await dbService.InsertNewLog(user.Id, "/" + route.TrimStart('/'));
         }
 
         await _next(context);

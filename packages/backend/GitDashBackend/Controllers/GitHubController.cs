@@ -1,10 +1,10 @@
 ﻿using GitDashBackend.Domain.DTOs;
 using GitDashBackend.Models;
+using GitDashBackend.Extensions;
 using GitDashBackend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GitDashBackend.Controllers;
 
@@ -16,17 +16,14 @@ public class GitHubController : ControllerBase
     private readonly IGitHubService _gitHubService;
     private readonly IDbService _dbService;
     private readonly ILogger<GitHubController> _logger;
-    private readonly Data.AppDbContext _dbContext;
 
     public GitHubController(IGitHubService gitHubService,
         IDbService dbService,
-        ILogger<GitHubController> logger,
-        Data.AppDbContext dbContext)
+        ILogger<GitHubController> logger)
     {
         _gitHubService = gitHubService;
         _dbService = dbService;
         _logger = logger;
-        _dbContext = dbContext;
     }
 
 
@@ -55,24 +52,6 @@ public class GitHubController : ControllerBase
 
         try
         {
-            // Register access log
-            var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-            var username = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(username))
-            {
-                var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == username);
-                if (user != null)
-                {
-                    _dbContext.Logs.Add(new Models.Log
-                    {
-                        UserId = user.Id,
-                        VisitedEndpoint = HttpContext.Request.Path,
-                        Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                    });
-                    await _dbContext.SaveChangesAsync();
-                }
-            }
-
             // Fetch repositories
             // Listing is not a visit: the history is only updated in the overview (stats) endpoint,
             // and only for the session user. The previous lookup by name changed other users' history.
@@ -116,24 +95,7 @@ public async Task<IActionResult> GetRecentRepositories()
 
     try
     {
-        // Register access log
-        var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-        var username = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-        
-        if (!string.IsNullOrEmpty(username))
-        {
-            var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == username);
-            if (user != null)
-            {
-                _dbContext.Logs.Add(new Models.Log
-                {
-                    UserId = user.Id,
-                    VisitedEndpoint = HttpContext.Request.Path,
-                    Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                });
-                await _dbContext.SaveChangesAsync();
-            }
-        }
+        var username = User.GetGitHubLogin();
 
         // Fetch repositories from GitHub
         RepositoriesDto repositories = await _gitHubService.GetUserRepositoriesAsync(accessToken);
@@ -211,23 +173,6 @@ public async Task<IActionResult> GetRecentRepositories()
 
         try
         {
-            // Log de acesso
-            var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-            var username = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(username))
-            {
-                var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == username);
-                if (user != null)
-                {
-                    _dbContext.Logs.Add(new Models.Log
-                    {
-                        UserId = user.Id,
-                        VisitedEndpoint = HttpContext.Request.Path,
-                        Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                    });
-                    await _dbContext.SaveChangesAsync();
-                }
-            }
             CommitsDto commits = await _gitHubService.GetRepositoryCommitsByFullNameAsync(accessToken, fullName);
             return Ok(new 
             { 
@@ -282,26 +227,6 @@ public async Task<IActionResult> GetRecentRepositories()
             }
 
             var decodedFullName = Uri.UnescapeDataString(fullName);
-            var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-            var username = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            int? userId = null;
-            if (!string.IsNullOrEmpty(username))
-            {
-                var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == username);
-
-                if (user != null)
-                    userId = user.Id;
-            }
-            if (userId != null)
-            {
-                _dbContext.Logs.Add(new Models.Log
-                {
-                    UserId = userId.Value,
-                    VisitedEndpoint = HttpContext.Request.Path,
-                    Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                });
-                await _dbContext.SaveChangesAsync();
-            }
             CollaboratorsDto collaborators = await _gitHubService.GetRepositoryCollaboratorsAsync(accessToken, decodedFullName, timeRange);
             if (collaborators == null)
             {
@@ -361,33 +286,14 @@ public async Task<IActionResult> GetRecentRepositories()
 
             var decodedFullName = Uri.UnescapeDataString(fullName);
         
-            // 1. Identify the User
-            var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-            var username = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            int? userId = null;
-
+            var username = User.GetGitHubLogin();
             if (!string.IsNullOrEmpty(username))
             {
                 var user = await _dbService.GetUserbyUsername(username);
                 if (user != null)
-                    userId = user.Id;
+                    await _dbService.UpsertVisitedRepository(decodedFullName, user.Id);
             }
 
-            // 2. Perform Database Operations (Log + Repository Upsert)
-            if (userId != null)
-            {
-                // A. Add Log
-                await _dbService.InsertNewLog(userId.Value, HttpContext.Request.Path);
-                
-                // Save changes in db
-                //await _dbContext.SaveChangesAsync();
-
-                // B. Upsert Repository
-                await _dbService.UpsertVisitedRepository(decodedFullName, userId.Value);
-
-                // Save changes in db
-                //await _dbContext.SaveChangesAsync();
-            }
             RepoOverviewStatsDto statsOverview = await _gitHubService.GetRepositoryStatsAsync(accessToken, decodedFullName, timeRange);
             if (statsOverview == null)
             {
@@ -442,29 +348,6 @@ public async Task<IActionResult> GetRecentRepositories()
         {
             var decodedFullName = Uri.UnescapeDataString(fullName);
             var decodedUsername = Uri.UnescapeDataString(username);
-
-            // Access log
-            var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-            var userName = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            int? userId = null;
-            if (!string.IsNullOrEmpty(userName))
-            {
-                var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == userName);
-                if (user != null)
-                {
-                    userId = user.Id;
-                }
-            }
-            if (userId != null)
-            {
-                _dbContext.Logs.Add(new Models.Log
-                {
-                    UserId = userId.Value,
-                    VisitedEndpoint = HttpContext.Request.Path,
-                    Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                });
-                await _dbContext.SaveChangesAsync();
-            }
 
             // Get weekly activity
             var collaborator = await _gitHubService.GetCollaboratorWeeklyActivityAsync(accessToken, decodedFullName, decodedUsername);
@@ -525,23 +408,6 @@ public async Task<IActionResult> GetRecentRepositories()
             }
             try
             {
-                // Log de acesso
-                var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-                var userName = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-                if (!string.IsNullOrEmpty(userName))
-                {
-                    var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == userName);
-                    if (user != null)
-                    {
-                        _dbContext.Logs.Add(new Models.Log
-                        {
-                            UserId = user.Id,
-                            VisitedEndpoint = HttpContext.Request.Path,
-                            Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                        });
-                        await _dbContext.SaveChangesAsync();
-                    }
-                }
                 var decodedFullName = Uri.UnescapeDataString(fullName);
                 var decodedUsername = Uri.UnescapeDataString(username);
                 var activity = await _gitHubService.GetCollaboratorActivityAsync(accessToken, decodedFullName, decodedUsername, range);
@@ -580,23 +446,6 @@ public async Task<IActionResult> GetRecentRepositories()
 
         try
         {
-            // Log de acesso
-            var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-            var username = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(username))
-            {
-                var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == username);
-                if (user != null)
-                {
-                    _dbContext.Logs.Add(new Models.Log
-                    {
-                        UserId = user.Id,
-                        VisitedEndpoint = HttpContext.Request.Path,
-                        Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                    });
-                    await _dbContext.SaveChangesAsync();
-                }
-            }
             var repoDto = await _gitHubService.GetRepositoryByOwnerRepoAsync(accessToken, ownerRepo);
             if (repoDto == null)
                 return NotFound(new { error = "Repository not found or access denied." });
@@ -638,23 +487,6 @@ public async Task<IActionResult> GetRecentRepositories()
             return BadRequest(new { error = "Missing required parameters." });
         try
         {
-            // Log de acesso
-            var identity = HttpContext.User.Identity as System.Security.Claims.ClaimsIdentity;
-            var usernameClaim = identity?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-            if (!string.IsNullOrEmpty(usernameClaim))
-            {
-                var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.Username == usernameClaim);
-                if (user != null)
-                {
-                    _dbContext.Logs.Add(new Models.Log
-                    {
-                        UserId = user.Id,
-                        VisitedEndpoint = HttpContext.Request.Path,
-                        Created = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
-                    });
-                    await _dbContext.SaveChangesAsync();
-                }
-            }
             var result = await _gitHubService.GetCollaboratorCodeChangesAsync(accessToken, fullName, username, range);
             if (result == null)
                 return NotFound(new { error = "Repository or collaborator not found." });
