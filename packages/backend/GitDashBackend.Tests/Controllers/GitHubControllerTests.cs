@@ -55,9 +55,7 @@ namespace GitDashBackend.Tests.Controllers
             return new AppDbContext(options);
         }
 
-        // Helper to create a controller instance with mocks and context
         private GitHubController CreateController(
-            AppDbContext context,
             Mock<IGitHubService>? gitHubServiceMock = null,
             Mock<IDbService>? dbServiceMock = null)
         {
@@ -68,8 +66,7 @@ namespace GitDashBackend.Tests.Controllers
             var controller = new GitHubController(
                 gitHubService,
                 dbService,
-                logger,
-                context
+                logger
             );
 
             controller.ControllerContext = new ControllerContext
@@ -109,8 +106,7 @@ namespace GitDashBackend.Tests.Controllers
         [Fact]
         public async Task GetRepositoryCommits_ReturnsUnauthorized_WhenSessionHasNoToken()
         {
-            using var context = CreateInMemoryContext();
-            var controller = CreateController(context);
+            var controller = CreateController();
 
             var httpContext = new DefaultHttpContext();
             var services = new ServiceCollection();
@@ -155,7 +151,7 @@ namespace GitDashBackend.Tests.Controllers
                     repositories = { new RepositoryDto { FullName = "ana/shared" } }
                 });
 
-            var controller = CreateController(context, gitHubServiceMock);
+            var controller = CreateController(gitHubServiceMock);
             controller.ControllerContext.HttpContext = CreateAuthenticatedContext("ana", "token-ana");
 
             var result = await controller.GetRepositories();
@@ -169,9 +165,8 @@ namespace GitDashBackend.Tests.Controllers
         [Fact]
         public async Task GetCollaboratorCodeChanges_ReturnsUnauthorized_WhenNoAccessToken()
         {
-            using var context = CreateInMemoryContext();
             var gitHubServiceMock = new Mock<IGitHubService>();
-            var controller = CreateController(context, gitHubServiceMock);
+            var controller = CreateController(gitHubServiceMock);
 
             var httpContext = new DefaultHttpContext();
 
@@ -191,9 +186,8 @@ namespace GitDashBackend.Tests.Controllers
         [Fact]
         public async Task GetRepositoryByUrl_ReturnsBadRequest_ForInvalidUrl()
         {
-            using var context = CreateInMemoryContext();
             var gitHubServiceMock = new Mock<IGitHubService>();
-            var controller = CreateController(context, gitHubServiceMock);
+            var controller = CreateController(gitHubServiceMock);
 
             var httpContext = new DefaultHttpContext();
 

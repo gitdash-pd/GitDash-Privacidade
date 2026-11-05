@@ -55,7 +55,7 @@ public class GitHubAccessor : IGitHubAccessor
 
     public async Task<CommitsDto> GetRepositoryCommitsByFullNameAsync(string token, string fullName)
     {
-        _logger.LogInformation("Fetching commits for {FullName}", fullName);
+        _logger.LogInformation("Fetching commits from GitHub API");
 
         var (owner, repo) = ParseFullName(fullName);
 
@@ -70,7 +70,6 @@ public class GitHubAccessor : IGitHubAccessor
             {
                 Message = commit.Commit.Message,
                 AuthorName = commit.Commit.Author.Name,
-                AuthorEmail = commit.Commit.Author.Email,
                 Date = commit.Commit.Author.Date.DateTime,
                 Additions = commit.Stats?.Additions ?? 0,
                 Deletions = commit.Stats?.Deletions ?? 0,
@@ -86,7 +85,7 @@ public class GitHubAccessor : IGitHubAccessor
     public async Task<CollaboratorsDto> GetRepositoryCollaboratorsAsync(string token, string fullName, string timeRange)
     {
         var (owner, repo) = ParseFullName(fullName);
-        _logger.LogInformation("Fetching collaborators for {FullName}", fullName);
+        _logger.LogInformation("Fetching collaborators from GitHub API");
 
         var client = CreateClient(token);
 
@@ -137,7 +136,7 @@ public class GitHubAccessor : IGitHubAccessor
     public async Task<RepoOverviewStatsDto> GetRepositoryStatsAsync(string token, string fullName, string timeRange)
     {
         var (owner, repo) = ParseFullName(fullName);
-        _logger.LogInformation("Fetching repository overview for {FullName}", fullName);
+        _logger.LogInformation("Fetching repository overview from GitHub API");
 
         var client = CreateClient(token);
         var overview = new RepoOverviewStatsDto();
@@ -238,7 +237,7 @@ public class GitHubAccessor : IGitHubAccessor
 
       public async Task<List<int>?> GetCollaboratorWeeklyActivityAsync(string token, string fullName, string username)
     {
-        _logger.LogInformation("Fetching weekly activity for {FullName} and {Username}", fullName, username);
+        _logger.LogInformation("Fetching weekly activity from GitHub API");
         var (owner, repo) = ParseFullName(fullName);
         var client = CreateClient(token);
 
@@ -270,7 +269,7 @@ public class GitHubAccessor : IGitHubAccessor
 
     public async Task<CollaboratorActivityDto?> GetCollaboratorActivityAsync(string token, string fullName, string username, string range)
     {
-        _logger.LogInformation("Fetching collaborator activity for {FullName} and {Username}", fullName, username);
+        _logger.LogInformation("Fetching collaborator activity from GitHub API");
         var (owner, repo) = ParseFullName(fullName);
         var client = CreateClient(token);
 

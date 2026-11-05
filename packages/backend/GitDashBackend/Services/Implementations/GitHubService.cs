@@ -82,11 +82,11 @@ public class GitHubService : IGitHubService
         var cachedData = await _redisAccessor.GetAsync<IEnumerable<T>>(cacheKey);
         if (cachedData != null)
         {
-            _logger.LogInformation("Returning data from cache for key: {CacheKey}", cacheKey);
+            _logger.LogInformation("Returning data from cache");
             return cachedData;
         }
 
-        _logger.LogInformation("Cache miss - fetching from GitHub API for key: {CacheKey}", cacheKey);
+        _logger.LogInformation("Cache miss - fetching from GitHub API");
         var data = await fetchFunc();
         var dataList = data.ToList();
         
@@ -100,11 +100,11 @@ public class GitHubService : IGitHubService
         var cachedData = await _redisAccessor.GetAsync<T>(cacheKey);
         if (cachedData != null)
         {
-            _logger.LogInformation("Returning data from cache for key: {CacheKey}", cacheKey);
+            _logger.LogInformation("Returning data from cache");
             return cachedData;
         }
 
-        _logger.LogInformation("Cache miss - fetching from GitHub API for key: {CacheKey}", cacheKey);
+        _logger.LogInformation("Cache miss - fetching from GitHub API");
         var data = await fetchFunc();
         
         await _redisAccessor.SetAsync(cacheKey, data, _cacheExpiration);
